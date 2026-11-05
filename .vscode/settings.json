@@ -1,0 +1,6 @@
+{
+  "task.allowAutomaticTasks": "on",
+  "luau-lsp.sourcemap.rojoProjectFile": "dev.project.json",
+  "luau-lsp.sourcemap.sourcemapFile": "Generated/sourcemap.json",
+  "luau-lsp.sourcemap.useVSCodeWatcher": true
+}

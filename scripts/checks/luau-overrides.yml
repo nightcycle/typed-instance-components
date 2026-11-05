@@ -1,0 +1,8 @@
+base: luau
+# Selene 0.30 inherits Lua 5.1's required assert message; Luau makes it optional.
+globals:
+  assert:
+    args:
+      - type: any
+      - type: any
+        required: false

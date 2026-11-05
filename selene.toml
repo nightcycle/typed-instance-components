@@ -1,0 +1,2 @@
+std = "scripts/checks/luau-overrides+Generated/Selene/roblox"
+exclude = ["Packages/**", "DevPackages/**", "tests/type-errors/**"]

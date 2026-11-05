@@ -1,0 +1,27 @@
+{
+  "name": "TypedInstanceComponentsTests",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Packages": {
+        "$className": "Folder",
+        "React": { "$path": "Packages/React.lua" },
+        "TypedInstanceComponents": { "$path": "Generated/Dev/TypedInstanceComponents.luau" },
+        "_Index": {
+          "$path": "Packages/_Index",
+          "TypedInstanceComponentsDev": {
+            "$className": "Folder",
+            "typed-instance-components": { "$path": "default.project.json" },
+            "React": { "$path": "Generated/Dev/React.luau" }
+          }
+        }
+      },
+      "Tests": { "$path": "tests/roblox" },
+      "TypeErrors": { "$path": "tests/type-errors" },
+      "Examples": { "$path": "examples" }
+    },
+    "ServerStorage": {
+      "DevPackages": { "$path": "DevPackages" }
+    }
+  }
+}

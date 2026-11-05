@@ -1,0 +1,65 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing stable version tag matching wally.toml (for example v0.1.0)
+        required: true
+        type: string
+      publish_wally:
+        description: Publish to Wally (disable only to retry GitHub assets after Wally succeeded)
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    env:
+      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: CompeyDev/setup-rokit@1d9390883f7ebce19d48f5b8d006e11d387c92ab # v0.2.1
+        with:
+          version: v1.2.0
+      - name: Validate version and exact tag commit
+        run: lune run scripts/release/validate.lune.luau
+      - name: Install dependencies and pinned definitions
+        run: lune run scripts/dev/setup.lune.luau
+      - name: Generated API, regression tests, formatting and strict types
+        run: lune run scripts/checks/run.lune.luau
+      - name: Verify dependency lockfile
+        run: git diff --exit-code -- wally.lock
+      - name: Build and verify release artifacts
+        run: lune run scripts/build/run.lune.luau
+      - name: Publish Wally package
+        if: github.event_name != 'workflow_dispatch' || inputs.publish_wally
+        env:
+          WALLY_AUTH_TOKEN: ${{ secrets.WALLY_AUTH_TOKEN }}
+        run: lune run scripts/release/publish-wally.lune.luau
+      - name: Publish GitHub release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" Generated/build/* --clobber
+          else
+            gh release create "$RELEASE_TAG" --verify-tag --generate-notes --title "$RELEASE_TAG" Generated/build/*
+          fi

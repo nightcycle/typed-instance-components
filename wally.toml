@@ -1,0 +1,18 @@
+[package]
+name = "nightcycle/typed-instance-components"
+description = "Strictly typed React-Luau host argument builders and custom component adapters."
+version = "0.1.0"
+license = "Apache-2.0"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"
+include = ["src", "src/**", "Generated", "Generated/Package", "Generated/Package/**", "default.project.json", "LICENSE", "README.md", "wally.toml"]
+exclude = ["**"]
+
+[place]
+shared-packages = "game.ReplicatedStorage.Packages"
+
+[dependencies]
+React = "jsdotlua/react@17.2.1"
+
+[dev-dependencies]
+ReactRoblox = "jsdotlua/react-roblox@17.2.1"
