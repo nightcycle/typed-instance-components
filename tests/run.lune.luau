@@ -188,10 +188,22 @@ test("subclass restrictions remove inherited writable properties", function()
 	assert(Api.properties(index, "Base").Value == "number" and Api.properties(index, "Child").Value == nil)
 end)
 
-test("release rejects tag mismatches and false-positive Wally success", function()
-	Release.validateTag("v0.1.0", "0.1.0")
-	assert(not pcall(Release.validateTag, "v0.2.0", "0.1.0"))
-	assert(not pcall(Release.version, "01.2.3"))
+test("release versions accept either spelling and preserve exact tag preference", function()
+	for _, version in { "0.1.1", "v0.1.1" } do
+		assert(Release.version(version) == "0.1.1")
+		Release.validateTag("v0.1.1", version)
+		Release.validateTag("0.1.1", version)
+		assert(not pcall(Release.validateTag, "v0.1.0", version))
+		assert(not pcall(Release.validateTag, "0.1.0", version))
+	end
+	assert(table.concat(Release.tags("0.1.1"), ",") == "0.1.1,v0.1.1")
+	assert(table.concat(Release.tags("v0.1.1"), ",") == "v0.1.1,0.1.1")
+	for _, invalid in { "01.2.3", "v01.2.3", "vv0.1.1", "0.1", "v0.1.1-beta", "0.1.1extra" } do
+		assert(not pcall(Release.version, invalid), `Accepted invalid release version: {invalid}`)
+	end
+end)
+
+test("release rejects false-positive Wally success", function()
 	assert(not Release.published(true, "Registry error"))
 	assert(Release.published(true, "Package published successfully!"))
 end)

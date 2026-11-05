@@ -10,15 +10,20 @@
 local Release = {}
 function Release.version(value: unknown): string
 	assert(type(value) == "string", "Package version must be a string")
-	local major, minor, patch = value:match("^(%d+)%.(%d+)%.(%d+)$")
-	assert(major and minor and patch, "Releases require a stable X.Y.Z version")
+	local major, minor, patch = value:match("^v?(%d+)%.(%d+)%.(%d+)$")
+	assert(major and minor and patch, "Releases require a stable X.Y.Z or vX.Y.Z version")
 	for _, part in { major, minor, patch } do
 		assert(#part == 1 or part:sub(1, 1) ~= "0", "Version components cannot have leading zeros")
 	end
-	return value
+	return `{major}.{minor}.{patch}`
+end
+function Release.tags(value: string): { string }
+	local version = Release.version(value)
+	return if value:sub(1, 1) == "v" then { "v" .. version, version } else { version, "v" .. version }
 end
 function Release.validateTag(tag: string, version: string)
-	assert(tag == "v" .. Release.version(version), "Release tag must match wally.toml version")
+	local actual, expected = Release.version(tag), Release.version(version)
+	assert(actual == expected, `Release version {actual} does not match wally.toml version {expected}`)
 end
 function Release.published(ok: boolean, stdout: string): boolean
 	-- Wally 0.3.2 may return exit code zero on a registry rejection.

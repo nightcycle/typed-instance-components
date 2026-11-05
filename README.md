@@ -185,9 +185,9 @@ To publish:
 
 1. Configure the repository secret `WALLY_AUTH_TOKEN` for an account allowed to publish under `nightcycle`.
 2. Set `wally.toml` to the release version, update `wally.lock` with `wally install`, and commit/push the validated changes.
-3. Push the matching stable tag, for example `v0.1.0`, or manually dispatch Release with that existing tag.
+3. Push the matching stable tag, for example `v0.1.1` or `0.1.1`, or manually dispatch Release with either spelling. The workflow tries the exact tag first, then its alternate spelling.
 
-Release checks the exact tag commit and manifest version, reruns validation, publishes Wally, then creates/uploads the GitHub release artifacts. Missing credentials and rejected Wally publication fail the release. Published Wally versions are immutable: use a new version for changed code. If Wally succeeded but GitHub asset publication failed, rerun the manual workflow for the same tag with `publish_wally` disabled. No publishing occurs during ordinary CI.
+Release compares versions without the optional `v` prefix, checks the exact tag commit, reruns validation, publishes Wally, then creates/uploads the GitHub release artifacts. Release lookups accept either spelling and uploads reuse the existing release's tag; new releases use the resolved Git tag. Release runs are serialized so the two input spellings cannot publish concurrently. Missing credentials and rejected Wally publication fail the release. Published Wally versions are immutable: use a new version for changed code. If Wally succeeded but GitHub asset publication failed, rerun the manual workflow for the same tag with `publish_wally` disabled. No publishing occurs during ordinary CI.
 
 ## License
 

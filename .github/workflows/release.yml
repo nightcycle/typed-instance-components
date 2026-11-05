@@ -2,11 +2,11 @@ name: Release
 
 on:
   push:
-    tags: ['v*']
+    tags: ['v*', '[0-9]*']
   workflow_dispatch:
     inputs:
       tag:
-        description: Existing stable version tag matching wally.toml (for example v0.1.0)
+        description: Existing stable version matching wally.toml (0.1.1 or v0.1.1)
         required: true
         type: string
       publish_wally:
@@ -19,7 +19,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: release-${{ inputs.tag || github.ref_name }}
+  group: release
   cancel-in-progress: false
 
 jobs:
@@ -29,13 +29,30 @@ jobs:
     permissions:
       contents: write
     env:
-      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+      RELEASE_INPUT: ${{ inputs.tag || github.ref_name }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.tag || github.ref }}
           fetch-depth: 0
           persist-credentials: false
+      - name: Resolve either version tag spelling
+        shell: bash
+        run: |
+          version="${RELEASE_INPUT#v}"
+          if [[ ! "$version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "::error::Use a stable X.Y.Z or vX.Y.Z version."
+            exit 1
+          fi
+          for tag in "$RELEASE_INPUT" "v$version" "$version"; do
+            if commit=$(git rev-parse --verify --quiet "refs/tags/$tag^{commit}"); then
+              git checkout --detach "$commit"
+              echo "RELEASE_VERSION=$version" >> "$GITHUB_ENV"
+              echo "RELEASE_TAG=$tag" >> "$GITHUB_ENV"
+              exit 0
+            fi
+          done
+          echo "::error::No release tag exists for $version (checked both spellings)."
+          exit 1
       - uses: CompeyDev/setup-rokit@1d9390883f7ebce19d48f5b8d006e11d387c92ab # v0.2.1
         with:
           version: v1.2.0
@@ -58,8 +75,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release upload "$RELEASE_TAG" Generated/build/* --clobber
-          else
-            gh release create "$RELEASE_TAG" --verify-tag --generate-notes --title "$RELEASE_TAG" Generated/build/*
-          fi
+          for tag in "$RELEASE_TAG" "v$RELEASE_VERSION" "$RELEASE_VERSION"; do
+            if gh release view "$tag" >/dev/null 2>&1; then
+              gh release upload "$tag" Generated/build/* --clobber
+              exit 0
+            fi
+          done
+          gh release create "$RELEASE_TAG" --verify-tag --generate-notes --title "$RELEASE_TAG" Generated/build/*
