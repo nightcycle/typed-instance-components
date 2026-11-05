@@ -38,13 +38,13 @@ local RobloxComponents = require(Packages.TypedInstanceComponents)
 local TextButton = RobloxComponents.TextButton
 local UICorner = RobloxComponents.UICorner
 
-type Props = RobloxComponents.TextButtonProperties & {
+type Properties = RobloxComponents.TextButtonProperties & {
 	Label: string,
 	OnActivated: () -> (),
 }
 ```
 
-The package entry point is lazy: requiring it initializes **zero host builders**. Accessing `RobloxComponents.TextButton` loads and caches that class. Bind the builders you use to locals, as above, to avoid repeated table lookups. `Custom` also loads on first access.
+The package header requires every class module and `Custom`, then returns a frozen table containing their builders directly. Each property type is re-exported from its class module, for example `export type FrameProperties = Frame.Properties`.
 
 Each class is a separate **private** ModuleScript under `Generated/Package/`. The only public import is the Wally header. Require that header first, then select builders from the returned API and types from its exported aliases:
 
@@ -53,16 +53,16 @@ local RobloxComponents = require(Packages.TypedInstanceComponents)
 local Frame = RobloxComponents.Frame
 local TextLabel = RobloxComponents.TextLabel
 
-type Props = RobloxComponents.FrameProperties & { Label: string }
+type Properties = RobloxComponents.FrameProperties & { Label: string }
 
 return e(Frame({}, props, {
 	Label = e(TextLabel({ Text = props.Label }, {})),
 }))
 ```
 
-See [the cached-builder example](examples/Cached.luau). Wally's package header has no child modules: do not index beneath it or depend on private `_Index` paths. Abstract class property types remain available through header exports such as `RobloxComponents.GuiBase2dProperties`. Selecting a builder caches the internal module without initializing the other host builders.
+See [the local-builder example](examples/Cached.luau). Wally's package header has no child modules: do not index beneath it or depend on private `_Index` paths. Abstract class property types remain available through header exports such as `RobloxComponents.GuiBase2dProperties`.
 
-The lazy package table is frozen. Use Luau's generalized iteration (`for name, builder in RobloxComponents do`) to enumerate it, which loads each visited builder. `pairs`, `next` and `rawget` bypass the lazy lookup and do not expose its entries.
+The exported table has no metatable. Normal indexing, generalized iteration, `pairs`, `next`, and `rawget` access its entries directly.
 
 For local use before publication, run `lune run scripts/dev/setup.lune.luau` and use `dev.project.json`. It exposes a childless Wally-style forwarding header and keeps the implementation inside the private package index, with a sibling React dependency. `scripts/dev/prepare-project.lune.luau` regenerates those development headers and runs `wally-package-types` to expose their types. The package's `default.project.json` combines authored modules in `src/` with generated implementation modules in `Generated/Package/`; it is used internally by Wally. The `.rbxm` release asset likewise needs a sibling `React` dependency. Consumers use the same header-returned API in every layout.
 
@@ -155,7 +155,7 @@ Runnable Lune entry points use `.lune.luau`; imported helper modules use `.luau`
 
 To check edited Luau files, run `lune run scripts/checks/files.lune.luau src/Merge.luau` (multiple file paths are supported). It runs `luau-lsp` and Selene, refreshes `Generated/sourcemap.json` for Roblox modules, and uses the Lune environment for tooling scripts. Intentional negative fixtures remain covered by the full check suite. Selene's generated Roblox standard library lives in `Generated/Selene/`; setup also installs Lune's editor definitions. The analyzer uses its default formatter because the pinned version's plain formatter can return success despite type errors.
 
-Setup installs locked React dependencies, generates the package and development headers, fixes Wally type exports, and downloads pinned Roblox type definitions. Builds and checks also run generation first, so generated files need not exist in a fresh checkout. Checks verify deterministic generation, lazy loading and caching, header exports, merge/filter behavior across every generated host, API mapping/restrictions, release validation, formatting, strict analysis, and nine fixtures that must fail type checking. One fixture rejects indexing below the public header. Build verifies the flat internal module hierarchy, childless public header, compiled package modules, internal require paths and Wally archive contents. Artifacts are written to `Generated/build/`:
+Setup installs locked React dependencies, generates the package and development headers, fixes Wally type exports, and downloads pinned Roblox type definitions. Builds and checks also run generation first, so generated files need not exist in a fresh checkout. Checks verify deterministic generation, eager module loading, direct header exports, merge/filter behavior across every generated host, API mapping/restrictions, release validation, formatting, strict analysis, and nine fixtures that must fail type checking. One fixture rejects indexing below the public header. Build verifies the flat internal module hierarchy, childless public header, compiled package modules, internal require paths and Wally archive contents. Artifacts are written to `Generated/build/`:
 
 - `typed-instance-components-0.1.0.zip`: Wally package.
 - `typed-instance-components.rbxm`: package module; requires a sibling React module.

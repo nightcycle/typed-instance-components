@@ -62,7 +62,6 @@ local function main()
 			"Generated/Package/GuiBase2d.luau",
 			"Generated/Package/UIBase.luau",
 			"src/Custom.luau",
-			"src/Lazy.luau",
 		}
 	do
 		assert(listing:find(required, 1, true), `Missing archive content: {required}`)
@@ -86,6 +85,7 @@ local function main()
 			"Generated/Package/Hosts.luau",
 			"Generated/Package/Properties.luau",
 			"src/Host.luau",
+			"src/Lazy.luau",
 			"src/Merge.luau",
 			"src/Types.luau",
 		}

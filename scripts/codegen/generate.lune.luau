@@ -94,20 +94,20 @@ local function main()
 	local root = {
 		header,
 		"-- Packages",
-		"local React = require(script.Parent.React)",
 		"-- Modules",
-		"local Lazy = require(script.Lazy)",
-		"-- Types",
+		"local Custom = require(script.Custom)",
 	}
-	local componentType = { "type Components = {", "\tCustom: typeof(require(script.Custom))," }
-	local loaders =
-		{ "local loaders: { [string]: () -> unknown } = {", "\tCustom = function() return require(script.Custom) end," }
+	for _, class in classes do
+		table.insert(root, `local {class.Name} = require(script.{class.Name})`)
+	end
+	table.insert(root, "-- Types")
+	local exports = { "return table.freeze({", "\tCustom = Custom," }
 	local coverage = {
 		"# Generated class coverage",
 		"",
 		`API revision: \`{source.revision}\`.`,
 		"",
-		"Each class has a private module and Properties type. Consumers use the package header's builders and ClassNameProperties aliases. Public, non-deprecated classes without NotCreatable or NotBrowsable tags have a host builder, loaded on first access. Engine rollout/permissions can still restrict creation.",
+		"Each class has a private module and Properties type. The package header requires every module and re-exports its Properties type as ClassNameProperties. Public, non-deprecated classes without NotCreatable or NotBrowsable tags have a host builder exported directly from the header. Engine rollout/permissions can still restrict creation.",
 		"",
 		"| Class | Superclass | Host builder |",
 		"| --- | --- | --- |",
@@ -129,10 +129,7 @@ local function main()
 		table.insert(lines, "-- Modules")
 		table.insert(lines, "-- Types")
 		appendProperties(lines, "Properties", props, names)
-		-- Keep the existing package-level aliases without requiring any class module.
-		-- Luau erases these declarations from runtime bytecode.
-		table.insert(root, "")
-		appendProperties(root, `{class.Name}Properties`, props, names)
+		table.insert(root, `export type {class.Name}Properties = {class.Name}.Properties`)
 		if creatable then
 			count += 1
 			table.insert(lines, "-- Constants")
@@ -161,11 +158,7 @@ local function main()
 			)
 			table.insert(lines, `\treturn "{class.Name}", append(defaults, props), children`)
 			table.insert(lines, "end")
-			table.insert(
-				componentType,
-				`\t{class.Name}: (defaults: {class.Name}Properties, props: {class.Name}Properties, children: React.ReactNode?) -> ("{class.Name}", {class.Name}Properties, React.ReactNode?),`
-			)
-			table.insert(loaders, `\t{class.Name} = function() return require(script.{class.Name}) end,`)
+			table.insert(exports, `\t{class.Name} = {class.Name},`)
 		else
 			table.insert(lines, "-- Constants")
 			table.insert(lines, classSections)
@@ -174,18 +167,14 @@ local function main()
 		outputs[`{packageDirectory}/{class.Name}.luau`] = table.concat(lines, "\n") .. "\n"
 		table.insert(coverage, `| {class.Name} | {class.Superclass} | {if creatable then "Yes" else "Types only"} |`)
 	end
-	table.insert(componentType, "}")
-	table.insert(root, "")
-	table.insert(root, table.concat(componentType, "\n"))
 	table.insert(root, "-- Constants")
-	table.insert(loaders, "}")
-	table.insert(root, table.concat(loaders, "\n"))
 	table.insert(root, classSections)
-	table.insert(root, "return (Lazy(loaders) :: any) :: Components")
+	table.insert(exports, "})")
+	table.insert(root, table.concat(exports, "\n"))
 	outputs[`{packageDirectory}/init.luau`] = table.concat(root, "\n") .. "\n"
 	outputs["Generated/classes.md"] = table.concat(coverage, "\n") .. "\n"
 	writeOutputs(outputs, checking)
-	print(`Generated {#classes} individual class modules, {count} host builders and a lazy package entry point.`)
+	print(`Generated {#classes} individual class modules and a package header exporting {count} host builders.`)
 end
 -- Class
 main()

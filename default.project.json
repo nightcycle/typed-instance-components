@@ -2,7 +2,6 @@
   "name": "TypedInstanceComponents",
   "tree": {
     "$path": "Generated/Package",
-    "Custom": { "$path": "src/Custom.luau" },
-    "Lazy": { "$path": "src/Lazy.luau" }
+    "Custom": { "$path": "src/Custom.luau" }
   }
 }

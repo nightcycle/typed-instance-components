@@ -10,13 +10,13 @@ local UICorner = RobloxComponents.UICorner
 -- Contexts
 -- Hooks
 -- Types
-export type Props = RobloxComponents.TextButtonProperties & { Label: string, OnActivated: () -> () }
+export type Properties = RobloxComponents.TextButtonProperties & { Label: string, OnActivated: () -> () }
 -- Constants
 -- References
 -- Global Variables
 -- Private Functions
 -- Class
-return function(props: Props)
+return function(props: Properties)
 	return React.createElement(TextButton(
 		{
 			Text = props.Label,

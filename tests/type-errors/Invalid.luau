@@ -4,7 +4,7 @@ local C = require(script.Parent.Parent.Packages.TypedInstanceComponents)
 local React = require(script.Parent.Parent.Packages.React)
 -- Modules
 -- Types
-type Props = { Value: number? }
+type Properties = { Value: number? }
 -- Constants
 -- References
 local Frame = C.Frame
@@ -18,7 +18,7 @@ C.UICorner({ CornerRadius = UDim2.new() }, {}) -- EXPECT_ERROR
 local binding = React.createBinding("wrong")
 C.Frame({ Size = binding }, {}) -- EXPECT_ERROR
 C.GuiBase2d({}, {}) -- EXPECT_ERROR
-local custom = C.Custom("Part", function(props: Props): Props
+local custom = C.Custom("Part", function(props: Properties): Properties
 	return props
 end)
 custom({ Value = "wrong" }, {}) -- EXPECT_ERROR

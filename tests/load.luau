@@ -24,8 +24,7 @@ return function(onLoad: ((string) -> ())?): (string) -> any
 		end
 		return result
 	end
-	-- Roblox runs precompiled ModuleScripts. Preload source/bytecode without executing
-	-- modules so Lune's asynchronous filesystem does not yield inside __index.
+	-- Preload bytecode without executing modules so imports use the same cache.
 	for _, directory in { "src", "Generated/Package" } do
 		for _, file in fs.readDir(directory) do
 			local moduleName = file:match("^(.*)%.luau$")

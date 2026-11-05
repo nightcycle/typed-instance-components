@@ -20,21 +20,26 @@ local function test(name: string, callback: () -> ())
 	print(`PASS {name}`)
 end
 -- Class
-test("package entry point loads and caches only the requested builder", function()
+test("package header requires every module and exports builders directly", function()
 	local loaded: { [string]: number } = {}
 	local load = createLoader(function(name: string)
 		loaded[name] = (loaded[name] or 0) + 1
 	end)
 	local components = load("src")
-	assert(loaded["src/Custom"] == nil)
-	assert(loaded["src/Frame"] == nil and loaded["src/TextLabel"] == nil)
+	assert(loaded["src/Custom"] == 1)
+	for _, file in fs.readDir("Generated/Package") do
+		local name = assert(file:match("^(.*)%.luau$"))
+		local modulePath = if name == "init" then "src" else `src/{name}`
+		assert(loaded[modulePath] == 1, `Module was not required by the header: {modulePath}`)
+	end
 	local frame = components.Frame
-	assert(frame == components.Frame and frame == load("src/Frame"))
-	assert(loaded["src/Frame"] == 1 and loaded["src/TextLabel"] == nil and loaded["src/Custom"] == nil)
-	local class, props = frame({}, { Name = "Lazy", Private = true })
-	assert(class == "Frame" and props.Name == "Lazy" and props.Private == nil)
+	assert(frame == rawget(components, "Frame") and frame == load("src/Frame"))
+	assert(components.Custom == rawget(components, "Custom") and components.Custom == load("src/Custom"))
+	assert(loaded["src/Frame"] == 1 and loaded["src/TextLabel"] == 1 and loaded["src/Custom"] == 1)
+	local class, props = frame({}, { Name = "Direct", Private = true })
+	assert(class == "Frame" and props.Name == "Direct" and props.Private == nil)
 	assert(components.GuiBase2d == nil and components.DoesNotExist == nil)
-	assert(table.isfrozen(components) and table.isfrozen(getmetatable(components)))
+	assert(table.isfrozen(components) and getmetatable(components) == nil)
 end)
 
 test("private class modules load independently without unrelated classes", function()
@@ -43,18 +48,18 @@ test("private class modules load independently without unrelated classes", funct
 		loaded[name] = true
 	end)
 	local corner = load("src/UICorner")
-	assert(loaded.src == nil and loaded["src/Lazy"] == nil and loaded["src/Frame"] == nil)
+	assert(loaded.src == nil and loaded["src/Frame"] == nil)
 	local class, props = corner({}, { Name = "Direct", Private = true })
 	assert(class == "UICorner" and props.Name == "Direct" and props.Private == nil)
 	local abstract = load("src/GuiBase2d")
 	assert(type(abstract) == "table" and next(abstract) == nil and table.isfrozen(abstract))
 end)
 
-test("generalized iteration exposes every lazy builder", function()
+test("ordinary table iteration exposes every builder", function()
 	local components = createLoader()("src")
 	local entries = 0
-	for name, builder in components do
-		assert(type(builder) == "function" and builder == components[name])
+	for name, builder in pairs(components) do
+		assert(type(builder) == "function" and builder == rawget(components, name))
 		entries += 1
 	end
 	assert(entries == 34)
