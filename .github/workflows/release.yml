@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Existing stable version matching wally.toml (0.1.1 or v0.1.1)
+        description: Existing stable version matching wally.toml
         required: true
         type: string
       publish_wally:
